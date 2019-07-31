@@ -3,6 +3,7 @@
  * @copyright Copyright (c) 2017 Vinzenz Rosenkranz <vinzenz.rosenkranz@gmail.com>
  *
  * @author Vinzenz Rosenkranz <vinzenz.rosenkranz@gmail.com>
+ * @author René Gieling <github@dartcafe.de>
  *
  * @license GNU AGPL version 3 or any later version
  *
@@ -29,10 +30,10 @@ use OCA\Polls\Db\Event;
 use OCA\Polls\Db\EventMapper;
 use OCA\Polls\Db\Notification;
 use OCA\Polls\Db\NotificationMapper;
-use OCA\Polls\Db\Options;
-use OCA\Polls\Db\OptionsMapper;
-use OCA\Polls\Db\Votes;
-use OCA\Polls\Db\VotesMapper;
+use OCA\Polls\Db\Option;
+use OCA\Polls\Db\OptionMapper;
+use OCA\Polls\Db\Vote;
+use OCA\Polls\Db\VoteMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
@@ -40,12 +41,15 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IAvatarManager;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\ILogger;
 use OCP\IRequest;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserManager;
+use OCP\L10N\IFactory;
 use OCP\Mail\IMailer;
 use OCP\Security\ISecureRandom;
 use OCP\User; //To do: replace according to API
@@ -54,85 +58,117 @@ use OCP\Util;
 class PageController extends Controller {
 
 	private $userId;
+	private $config;
 	private $commentMapper;
 	private $eventMapper;
 	private $notificationMapper;
-	private $optionsMapper;
-	private $votesMapper;
+	private $optionMapper;
+	private $voteMapper;
 	private $urlGenerator;
 	private $userMgr;
 	private $avatarManager;
 	private $logger;
 	private $trans;
+	private $transFactory;
 	private $groupManager;
+	private $mailer;
 
 	/**
 	 * PageController constructor.
 	 * @param string $appName
 	 * @param IRequest $request
+	 * @param IConfig $config
 	 * @param IUserManager $userMgr
 	 * @param IGroupManager $groupManager
 	 * @param IAvatarManager $avatarManager
 	 * @param ILogger $logger
 	 * @param IL10N $trans
+	 * @param IFactory $transFactory
 	 * @param IURLGenerator $urlGenerator
 	 * @param string $userId
 	 * @param CommentMapper $commentMapper
+	 * @param OptionMapper $optionMapper
 	 * @param EventMapper $eventMapper
 	 * @param NotificationMapper $notificationMapper
-	 * @param OptionsMapper $optionsMapper
-	 * @param VotesMapper $VotesMapper
+	 * @param VoteMapper $VoteMapper
+	 * @param IMailer $mailer
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
+		IConfig $config,
 		IUserManager $userMgr,
 		IGroupManager $groupManager,
 		IAvatarManager $avatarManager,
 		ILogger $logger,
 		IL10N $trans,
+		IFactory $transFactory,
 		IURLGenerator $urlGenerator,
 		$userId,
 		CommentMapper $commentMapper,
-		OptionsMapper $optionsMapper,
+		OptionMapper $optionMapper,
 		EventMapper $eventMapper,
 		NotificationMapper $notificationMapper,
-		VotesMapper $VotesMapper
+		VoteMapper $VoteMapper,
+		IMailer $mailer
 	) {
 		parent::__construct($appName, $request);
+		$this->request = $request;
+		$this->config = $config;
 		$this->userMgr = $userMgr;
 		$this->groupManager = $groupManager;
 		$this->avatarManager = $avatarManager;
 		$this->logger = $logger;
 		$this->trans = $trans;
+		$this->transFactory = $transFactory;
 		$this->urlGenerator = $urlGenerator;
 		$this->userId = $userId;
 		$this->commentMapper = $commentMapper;
+		$this->optionMapper = $optionMapper;
 		$this->eventMapper = $eventMapper;
 		$this->notificationMapper = $notificationMapper;
-		$this->optionsMapper = $optionsMapper;
-		$this->votesMapper = $VotesMapper;
+		$this->voteMapper = $VoteMapper;
+		$this->mailer = $mailer;
+	}
+
+	/**
+	* @NoAdminRequired
+	* @NoCSRFRequired
+	*/
+	public function index() {
+		return new TemplateResponse('polls', 'polls.tmpl',
+		['urlGenerator' => $this->urlGenerator]);
+	}
+
+	/**
+	* @NoAdminRequired
+	* @NoCSRFRequired
+	*/
+	public function createPoll() {
+		return new TemplateResponse('polls', 'polls.tmpl',
+		['urlGenerator' => $this->urlGenerator]);
+	}
+
+	/**
+	* @NoAdminRequired
+	* @NoCSRFRequired
+	*/
+	public function clonePoll() {
+		return new TemplateResponse('polls', 'polls.tmpl',
+		['urlGenerator' => $this->urlGenerator]);
 	}
 
 	/**
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 * @param string $hash
+	 * @return TemplateResponse
 	 */
-	public function index() {
-		$polls = $this->eventMapper->findAllForUserWithInfo($this->userId);
-		$comments = $this->commentMapper->findDistinctByUser($this->userId);
-		$votes = $this->votesMapper->findDistinctByUser($this->userId);
-		$response = new TemplateResponse('polls', 'main.tmpl', [
-			'polls' => $polls,
-			'comments' => $comments,
-			'votes' => $votes,
-			'userId' => $this->userId,
-			'userMgr' => $this->userMgr,
-			'urlGenerator' => $this->urlGenerator
+	public function editPoll($hash) {
+		return new TemplateResponse('polls', 'polls.tmpl', [
+			'urlGenerator' => $this->urlGenerator,
+ 			'hash' => $hash
 		]);
-		$csp = new ContentSecurityPolicy();
-		$response->setContentSecurityPolicy($csp);
-		return $response;
 	}
 
 	/**
@@ -146,6 +182,10 @@ class PageController extends Controller {
 			if ($from === $notification->getUserId()) {
 				continue;
 			}
+			$recUser = $this->userMgr->get($notification->getUserId());
+			if (!$recUser instanceof IUser) {
+				continue;
+			}
 			$email = \OC::$server->getConfig()->getUserValue($notification->getUserId(), 'settings', 'email');
 			if ($email === null || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 				continue;
@@ -155,44 +195,43 @@ class PageController extends Controller {
 					array('hash' => $poll->getHash()))
 			);
 
-			$recUser = $this->userMgr->get($notification->getUserId());
 			$sendUser = $this->userMgr->get($from);
-			$rec = '';
-			if ($recUser !== null) {
-				$rec = $recUser->getDisplayName();
-			}
 			$sender = $from;
-			if ($sendUser !== null) {
+			if ($sendUser instanceof IUser) {
 				$sender = $sendUser->getDisplayName();
 			}
-			$msg = $this->trans->t('Hello %s,<br/><br/><strong>%s</strong> participated in the poll \'%s\'.<br/><br/>To go directly to the poll, you can use this <a href="%s">link</a>',
-				array(
-					$rec,
-					$sender,
-					$poll->getTitle(),
-					$url
-				));
 
-			$msg .= '<br/><br/>';
+			$lang = $this->config->getUserValue($notification->getUserId(), 'core', 'lang');
+			$trans = $this->transFactory->get('polls', $lang);
+			$emailTemplate = $this->mailer->createEMailTemplate('polls.Notification', [
+				'user' => $sender,
+				'title' => $poll->getTitle(),
+				'link' => $url,
+			]);
+			$emailTemplate->setSubject($trans->t('Polls App - New Activity'));
+			$emailTemplate->addHeader();
+			$emailTemplate->addHeading($trans->t('Polls App - New Activity'), false);
 
-			$toName = $this->userMgr->get($notification->getUserId())->getDisplayName();
-			$subject = $this->trans->t('Polls App - New Activity');
-			$fromAddress = Util::getDefaultEmailAddress('no-reply');
-			$fromName = $this->trans->t('Polls App') . ' (' . $from . ')';
+			$emailTemplate->addBodyText(str_replace(
+				['{user}', '{title}'],
+				[$sender, $poll->getTitle()],
+				$trans->t('{user} participated in the poll "{title}"')
+			));
 
+			$emailTemplate->addBodyButton(
+				htmlspecialchars($trans->t('Go to poll')),
+				$url,
+				false
+			);
+
+			$emailTemplate->addFooter();
 			try {
-				/** @var IMailer $mailer */
-				$mailer = \OC::$server->getMailer();
-				/** @var \OC\Mail\Message $message */
-				$message = $mailer->createMessage();
-				$message->setSubject($subject);
-				$message->setFrom(array($fromAddress => $fromName));
-				$message->setTo(array($email => $toName));
-				$message->setHtmlBody($msg);
-				$mailer->send($message);
+				$message = $this->mailer->createMessage();
+				$message->setTo([$email => $recUser->getDisplayName()]);
+				$message->useTemplate($emailTemplate);
+				$this->mailer->send($message);
 			} catch (\Exception $e) {
-				$message = 'Error sending mail to: ' . $toName . ' (' . $email . ')';
-				Util::writeLog('polls', $message, Util::ERROR);
+				$this->logger->logException($e, ['app' => 'polls']);
 			}
 		}
 	}
@@ -210,9 +249,9 @@ class PageController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new TemplateResponse('polls', 'no.acc.tmpl', []);
 		}
-		$options = $this->optionsMapper->findByPoll($poll->getId());
-		$votes = $this->votesMapper->findByPoll($poll->getId());
-		$participants = $this->votesMapper->findParticipantsByPoll($poll->getId());
+		$options = $this->optionMapper->findByPoll($poll->getId());
+		$votes = $this->voteMapper->findByPoll($poll->getId());
+		$participants = $this->voteMapper->findParticipantsByPoll($poll->getId());
 		$comments = $this->commentMapper->findByPoll($poll->getId());
 
 		try {
@@ -221,7 +260,7 @@ class PageController extends Controller {
 			$notification = null;
 		}
 		if ($this->hasUserAccess($poll)) {
-			return new TemplateResponse('polls', 'goto.tmpl', [
+			return new TemplateResponse('polls', 'vote.tmpl', [
 				'poll' => $poll,
 				'options' => $options,
 				'comments' => $comments,
@@ -253,33 +292,11 @@ class PageController extends Controller {
 		$poll = new Event();
 		$poll->setId($pollId);
 		$this->commentMapper->deleteByPoll($pollId);
-		$this->votesMapper->deleteByPoll($pollId);
-		$this->optionsMapper->deleteByPoll($pollId);
+		$this->voteMapper->deleteByPoll($pollId);
+		$this->optionMapper->deleteByPoll($pollId);
 		$this->eventMapper->delete($poll);
 		$url = $this->urlGenerator->linkToRoute('polls.page.index');
 		return new RedirectResponse($url);
-	}
-
-	/**
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 * @param string $hash
-	 * @return TemplateResponse
-	 */
-	public function editPoll($hash) {
-		return new TemplateResponse('polls', 'create.tmpl', [
-			'urlGenerator' => $this->urlGenerator,
- 			'hash' => $hash
-		]);
-	}
-
-	/**
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 */
-	public function createPoll() {
-		return new TemplateResponse('polls', 'create.tmpl',
-			['urlGenerator' => $this->urlGenerator]);
 	}
 
 	/**
@@ -323,15 +340,15 @@ class PageController extends Controller {
 			$options = json_decode($options);
 			$answers = json_decode($answers);
 			$count_options = count($options);
-			$this->votesMapper->deleteByPollAndUser($pollId, $userId);
+			$this->voteMapper->deleteByPollAndUser($pollId, $userId);
 
 			for ($i = 0; $i < $count_options; $i++) {
-				$vote = new Votes();
+				$vote = new Vote();
 				$vote->setPollId($pollId);
 				$vote->setUserId($userId);
 				$vote->setVoteOptionText(htmlspecialchars($options[$i]));
 				$vote->setVoteAnswer($answers[$i]);
-				$this->votesMapper->insert($vote);
+				$this->voteMapper->insert($vote);
 
 			}
 			$this->sendNotifications($pollId, $userId);

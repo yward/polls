@@ -1,22 +1,12 @@
-/* global Clipboard, Handlebars, navigator */
+/* global Clipboard, Handlebars, navigator, deletePoll  */
 
 var newUserOptions = [];
 var newUserAnswers = [];
 
 var maxVotes = 0;
 var valuesChanged = false;
-var maybeAllowed = true;
+var maybeAllowed = false;
 var tzOffset = new Date().getTimezoneOffset();
-
-// HTML template for new comment (handlebars.js)
-var tmpl_comment = Handlebars.compile('<li class="comment flex-column"> ' +
-	'<div class="authorRow user-cell flex-row"> ' +
-	'<div class="avatar missing" title="{{userId}}"></div> ' +
-	'<div class="author">{{displayName}}</div>' +
-	'<div class="date has-tooltip live-relative-timestamp datespan" data-timestamp="{{timeStamp}}" title="{{date}}">{{relativeNow}}</div>' +
-	'</div>' +
-	'<div class="message wordwrap comment-content">{{comment}}</div>' +
-	'</li>');
 
 $.fn.switchClass = function (a, b) {
 	this.removeClass(a);
@@ -26,6 +16,8 @@ $.fn.switchClass = function (a, b) {
 
 function updateCommentsCount() {
 	$('#comment-counter').removeClass('no-comments');
+	$('#comment-counter').removeClass('no-comments icon-comment-no');
+	$('#comment-counter').addClass('icon-comment-yes');
 	$('#comment-counter').text(parseInt($('#comment-counter').text()) +1);
 }
 
@@ -73,6 +65,7 @@ function switchSidebar() {
 }
 
 $(document).ready(function () {
+	valuesChanged = true;
 
 	var clipboard = new Clipboard('.copy-link');
 
@@ -123,8 +116,8 @@ $(document).ready(function () {
 	// count how many times in each date
 	updateBest();
 
-	if ($('#app-content').hasClass('maybedisallowed')) {
-		maybeAllowed = false;
+	if ($('#app-content').hasClass('maybeallowed')) {
+		maybeAllowed = true;
 	}
 
 	if (window.innerWidth > 1024) {
@@ -138,6 +131,9 @@ $(document).ready(function () {
 			hideAvatars = true;
 		}
 	}
+	$('.popupmenu').each(function () {
+		OC.registerMenu($('#expand_' + $(this).attr('value')), $('#expanddiv_' + $(this).attr('value')) );
+	});
 
 	$('.delete-poll').click(function () {
 		deletePoll(this);
@@ -174,6 +170,7 @@ $(document).ready(function () {
 				form.elements.userId.value = ac.value;
 			} else {
 				alert(t('polls', 'You are not registered.\nPlease enter your name to vote\n(at least 3 characters).'));
+				$(this).prop("disabled", false);
 				return;
 			}
 		}
@@ -226,7 +223,16 @@ $(document).ready(function () {
 		};
 		$('.new-comment .icon-loading-small').show();
 		$.post(form.action, data, function (data) {
-			$('#no-comments').after(tmpl_comment(data));
+			$('#no-comments').after(
+				'<li class="comment flex-column"> ' +
+				'<div class="authorRow user-cell flex-row"> ' +
+				'<div class="avatar missing" title="' + data.userId + '"></div> ' +
+				'<div class="author">' + data.displayName + '</div>' +
+				'<div class="date has-tooltip live-relative-timestamp datespan" data-timestamp="' + data.timeStamp + '" title="' + data.date + '">' + data.relativeNow + '</div>' +
+				'</div>' +
+				'<div class="message wordwrap comment-content">' + data.comment + '</div>' +
+				'</li>'
+			);
 
 			if (!$('#no-comments').hasClass('hidden')) {
 				$('#no-comments').addClass('hidden');
@@ -269,7 +275,24 @@ $('#commentBox').keyup(function () {
 	}
 });
 
-$(document).on('click', '.toggle-cell, .poll-cell.active', function () {
+$(document).on('mousedown', '.toggle', function () {
+	var $toggleAllClasses = '';
+	valuesChanged = true;
+
+	if ($(this).hasClass('toggle-yes')) {
+		$toggleAllClasses= 'yes';
+	} else if($(this).hasClass('toggle-no')) {
+		$toggleAllClasses= 'no';
+	} else if($(this).hasClass('toggle-maybe')) {
+		$toggleAllClasses= 'maybe';
+	}
+	$('.poll-cell.active').removeClass('yes no maybe unvoted icon-no icon-yes icon-maybe');
+	$('.poll-cell.active').addClass($toggleAllClasses);
+	$('.poll-cell.active').addClass('icon-' + $toggleAllClasses);
+	updateCounters();
+});
+
+$(document).on('mousedown', '.poll-cell.active', function () {
 	valuesChanged = true;
 	var $nextClass = '';
 	var $toggleAllClasses = '';
@@ -292,12 +315,14 @@ $(document).on('click', '.toggle-cell, .poll-cell.active', function () {
 		$toggleAllClasses= 'maybe';
 	}
 
-	$(this).removeClass('yes no maybe unvoted');
+	$(this).removeClass('yes no maybe unvoted icon-no icon-yes icon-maybe');
 	$(this).addClass($nextClass);
+	$(this).addClass('icon-' + $nextClass);
 
 	if ($(this).hasClass('toggle-cell')) {
-		$('.poll-cell.active').removeClass('yes no maybe unvoted');
+		$('.poll-cell.active').removeClass('yes no maybe unvoted icon-no icon-yes icon-maybe');
 		$('.poll-cell.active').addClass($toggleAllClasses);
+		$('.poll-cell.active').addClass('icon-' + $toggleAllClasses);
 	}
 	updateCounters();
 });

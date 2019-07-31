@@ -38,31 +38,43 @@ class PageControllerTest extends UnitTestCase {
 	 * {@inheritDoc}
 	 */
 	public function setUp() {
-		$request = $this->getMockBuilder('OCP\IRequest')
+		$avatarManager = $this->getMockBuilder('OCP\IAvatarManager')
 			->disableOriginalConstructor()
 			->getMock();
-		$userManager = $this->getMockBuilder('OCP\IUserManager')
+		$config = $this->getMockBuilder('OCP\IConfig')
 			->disableOriginalConstructor()
 			->getMock();
 		$groupManager = $this->getMockBuilder('OCP\IGroupManager')
 			->disableOriginalConstructor()
 			->getMock();
-		$avatarManager = $this->getMockBuilder('OCP\IAvatarManager')
+		$l10n = $this->getMockBuilder('OCP\IL10N')
 			->disableOriginalConstructor()
 			->getMock();
 		$logger = $this->getMockBuilder('OCP\ILogger')
 			->disableOriginalConstructor()
 			->getMock();
-		$l10n = $this->getMockBuilder('OCP\IL10N')
+		$request = $this->getMockBuilder('OCP\IRequest')
 			->disableOriginalConstructor()
 			->getMock();
 		$urlGenerator = $this->getMockBuilder('OCP\IURLGenerator')
 			->disableOriginalConstructor()
 			->getMock();
+		$user = $this->getMockBuilder('OCP\IUser')
+			->disableOriginalConstructor()
+			->getMock();
+		$userManager = $this->getMockBuilder('OCP\IUserManager')
+			->disableOriginalConstructor()
+			->getMock();
+		$transFactory = $this->getMockBuilder('OCP\L10N\IFactory')
+			->disableOriginalConstructor()
+			->getMock();
+		$mailer = $this->getMockBuilder('OCP\Mail\IMailer')
+			->disableOriginalConstructor()
+			->getMock();
 		$commentMapper = $this->getMockBuilder('OCA\Polls\Db\CommentMapper')
 			->disableOriginalConstructor()
 			->getMock();
-		$optionsMapper = $this->getMockBuilder('OCA\Polls\Db\OptionsMapper')
+		$optionMapper = $this->getMockBuilder('OCA\Polls\Db\OptionMapper')
 			->disableOriginalConstructor()
 			->getMock();
 		$eventMapper = $this->getMockBuilder('OCA\Polls\Db\EventMapper')
@@ -71,25 +83,28 @@ class PageControllerTest extends UnitTestCase {
 		$notificationMapper = $this->getMockBuilder('OCA\Polls\Db\NotificationMapper')
 			->disableOriginalConstructor()
 			->getMock();
-		$votesMapper = $this->getMockBuilder('OCA\Polls\Db\VotesMapper')
+		$voteMapper = $this->getMockBuilder('OCA\Polls\Db\VoteMapper')
 			->disableOriginalConstructor()
 			->getMock();
 
 		$this->controller = new PageController(
 			'polls',
 			$request,
+			$config,
 			$userManager,
 			$groupManager,
 			$avatarManager,
 			$logger,
 			$l10n,
+			$transFactory,
 			$urlGenerator,
 			$this->userId,
 			$commentMapper,
-			$optionsMapper,
+			$optionMapper,
 			$eventMapper,
 			$notificationMapper,
-			$votesMapper
+			$voteMapper,
+			$mailer
 		);
 	}
 
@@ -99,7 +114,7 @@ class PageControllerTest extends UnitTestCase {
 	public function testIndex() {
 		$result = $this->controller->index();
 
-		$this->assertEquals('main.tmpl', $result->getTemplateName());
+		$this->assertEquals('polls.tmpl', $result->getTemplateName());
 		$this->assertInstanceOf(TemplateResponse::class, $result);
 	}
 }

@@ -8,6 +8,9 @@
 This is a poll app, similar to doodle or dudle, for Nextcloud written in PHP and JS / jQuery.
 It is a rework of the already existing [polls app](https://github.com/raduvatav/polls) written by @raduvatav.
 
+**Note**: ownCloud is **no longer** supported! Last (confirmed) working version is 0.8.1 and is released in the oC marketplace.
+**Note**: IE11 users will face some CSS problems (see #541). Please change to a compatible browser (Firefox, Chrome, Edge, etc.)
+
 ### Features
 - :bar_chart: Create / edit polls (datetimes _and_ texts)
 - :date: Set expiration date
@@ -18,14 +21,19 @@ It is a rework of the already existing [polls app](https://github.com/raduvatav/
 - https://github.com/nextcloud/polls/issues
 
 ### Screenshots
+Overview of all polls
 ![Overview](https://github.com/nextcloud/polls/blob/master/screenshots/overview.png)
 
+The vote page
 ![Vote](https://github.com/nextcloud/polls/blob/master/screenshots/vote.png)
 
+Creating a new poll
 ![New poll](https://github.com/nextcloud/polls/blob/master/screenshots/edit-poll.png)
 
+View the vote page on mobiles
 ![Vote mobile portrait](https://github.com/nextcloud/polls/blob/master/screenshots/vote-mobile-portrait.png)
 
+Turn phone to landscape to see details
 ![Vote mobile landscape](https://github.com/nextcloud/polls/blob/master/screenshots/vote-mobile-landscape.png)
 
 ## Installation / Update
@@ -41,9 +49,13 @@ If you want to run the latest development version from git source, you need to c
 git clone https://github.com/nextcloud/polls.git
 ```
 
+* Install dev environment with ```make dev-setup```
+* Compile polls.js with ```make build-js-production``` or ```npm run build```
+* Run a complete build with ```make all``` (installs dev env, runs linter and builds the polls.js)
+
 ## Contribution Guidelines
-Please read the [Code of Conduct](https://nextcloud.com/community/code-of-conduct/). This document offers some guidance 
-to ensure Nextcloud participants can cooperate effectively in a positive and inspiring atmosphere, and to explain how together 
+Please read the [Code of Conduct](https://nextcloud.com/community/code-of-conduct/). This document offers some guidance
+to ensure Nextcloud participants can cooperate effectively in a positive and inspiring atmosphere, and to explain how together
 we can strengthen and support each other.
 
 For more information please review the [guidelines for contributing](https://github.com/nextcloud/server/blob/master/CONTRIBUTING.md) to this repository.

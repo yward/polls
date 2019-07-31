@@ -1,8 +1,60 @@
 # Changelog
-
 All notable changes to this project will be documented in this file.
 
-## [0.9.0] - eta Nov 2018
+## [0.10.2] - 2019-03-13
+
+  - #532 - cannot share poll (only share option)
+
+## [0.10.1] - 2019-03-02
+
+### Fixed
+
+  - #528 - pull down on three-dot menu hidden for first participant
+
+## [0.10.0] - 2019-02-24
+
+### Added
+
+  - main list page
+    - rewrite as a vue app
+    - improved UI
+  - ability to clone any poll and shift date options (#323, #245)
+  - design updates to vote page
+  - some more UI enhancements
+  - Maybe option for a poll is configurable
+
+### Fixed
+
+  - #82  - "user_" / "group_" prefix
+  - #206 - User name is prefixed with user_, + incorrect translation
+  - #461 - Polls with expire date could not be created/edited
+  - #478 - Send comment bug
+  - #479 - Not possible to vote for none of the options
+  - #498 - "Create Poll" button disabled after failed validation
+  - #507 - Fix query params in eventmapper
+  - #511 - No difference between hidden and open poll
+
+## [0.9.5] - 2018-12-22
+
+### Fixed
+
+  - #457 - update to 0.9.4 failed for postgres database
+  - #454 - Update to 0.9.3 failed for postgresql database
+
+## [0.9.4] - 2018-12-18
+
+### Fixed
+
+  - #453 - Polls upgrade leads to NotNullConstraintViolationException
+  - #454 - Update to 0.9.3 failed for postgresql database
+  - #455 - Fix color variable name in list.scss
+
+## [0.9.3] - 2018-12-18
+
+### Fixed
+  - Fix minor problem with migration
+
+## [0.9.1] - 2018-12-11
 
 ### Added
   - create/edit page
@@ -10,7 +62,7 @@ All notable changes to this project will be documented in this file.
     - improved UI
 	- introduced new NC date time picker from vue-nextcloud
 	- introduced multiselect from vue-nextcloud
-	- added option to forbid "maybe" vote
+	- added option to allow "maybe" vote
 
   - vote page
 	- made polls table scrollable
@@ -19,7 +71,7 @@ All notable changes to this project will be documented in this file.
   - Users in the admin group should be able to edit polls (#386)
 
 ### Changed
-  - Compatibility to NC 14
+  - Compatibility to NC 14 and 15
   - Introduced vue
   - Changing database theme
   - Polls is a Nextcloud only app now. If you wish to proceed developing the ownCloud version, make a fork from the `stable-0.8` branch.
