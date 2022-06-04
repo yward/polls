@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "446637bd32e4be9092d9decd2adbcde9",
+    "content-hash": "784b28f44b1b23e4dc089d7fce3b34b9",
     "packages": [
         {
             "name": "dflydev/dot-access-data",
@@ -786,28 +786,28 @@
         },
         {
             "name": "christophwurst/nextcloud",
-            "version": "v23.0.2",
+            "version": "v24.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ChristophWurst/nextcloud_composer.git",
-                "reference": "7f7b957934d22205aab66c568ac3029bd8f2110d"
+                "reference": "f032acdff1502a7323f95a6524d163290f43b446"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ChristophWurst/nextcloud_composer/zipball/7f7b957934d22205aab66c568ac3029bd8f2110d",
-                "reference": "7f7b957934d22205aab66c568ac3029bd8f2110d",
+                "url": "https://api.github.com/repos/ChristophWurst/nextcloud_composer/zipball/f032acdff1502a7323f95a6524d163290f43b446",
+                "reference": "f032acdff1502a7323f95a6524d163290f43b446",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.3 || ~8.0.0",
-                "psr/container": "^1.0",
+                "php": "^7.4 || ~8.0 || ~8.1",
+                "psr/container": "^1.1.1",
                 "psr/event-dispatcher": "^1.0",
                 "psr/log": "^1.1"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "23.0.0-dev"
+                    "dev-master": "24.0.0-dev"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -823,9 +823,9 @@
             "description": "Composer package containing Nextcloud's public API (classes, interfaces)",
             "support": {
                 "issues": "https://github.com/ChristophWurst/nextcloud_composer/issues",
-                "source": "https://github.com/ChristophWurst/nextcloud_composer/tree/v23.0.2"
+                "source": "https://github.com/ChristophWurst/nextcloud_composer/tree/v24.0.1"
             },
-            "time": "2022-02-22T09:41:29+00:00"
+            "time": "2022-06-02T14:16:47+00:00"
         },
         {
             "name": "composer/package-versions-deprecated",
